@@ -1,46 +1,88 @@
-# Getting Started with Create React App
+# CrowdfundIt Client
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A crowdfunding platform frontend built with React, TypeScript, and Tailwind CSS, with authentication provided by Clerk.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- User authentication with Clerk
+- Role-based access control
+- Responsive design with Tailwind CSS
+- Project browsing and creation
+- Blog section
+- User profile management
+- Support for different user roles (Creator, Backer)
 
-### `npm start`
+## Prerequisites
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- Node.js 14.x or higher
+- npm or yarn
+- A Clerk account and project (for authentication)
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## Environment Setup
 
-### `npm test`
+Create a `.env` file in the root of the client directory with the following variables:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```
+REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+```
 
-### `npm run build`
+Replace `your_clerk_publishable_key` with your actual Clerk publishable key from your Clerk dashboard.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Installation
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+1. Clone the repository
+2. Navigate to the client directory
+3. Install dependencies:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+npm install
+# or
+yarn install
+```
 
-### `npm run eject`
+## Development
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+To start the development server:
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+npm start
+# or
+yarn start
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+The application will be available at [http://localhost:3000](http://localhost:3000).
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## Building for Production
 
-## Learn More
+To build the application for production:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+npm run build
+# or
+yarn build
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Project Structure
+
+- `/src/components` - Reusable UI components
+- `/src/components/auth` - Authentication-related components
+- `/src/components/layout` - Layout components (Navbar, Footer, etc.)
+- `/src/contexts` - React context providers
+- `/src/pages` - Main application pages
+- `/src/utils` - Utility functions
+- `/src/types` - TypeScript type definitions
+
+## Authentication
+
+This project uses [Clerk](https://clerk.dev) for authentication. Clerk provides:
+
+- Login and signup functionality
+- User profile management
+- Session management
+- Social login providers
+
+## Customization
+
+- Styles: Modify the Tailwind configuration in `tailwind.config.js`
+- Theme: Update primary colors and other design tokens in the configuration
