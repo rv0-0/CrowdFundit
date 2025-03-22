@@ -1,45 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useAuth as useClerkAuth } from '@clerk/clerk-react';
 import api from '../utils/api';
-import Navbar from '../components/layout/Navbar';
-import Footer from '../components/layout/Footer';
+import Layout from '../components/layout/Layout';
 
 interface ProjectFormData {
   title: string;
+  shortDesc: string;
   description: string;
   category: string;
-  fundingGoal: string;
-  duration: string;
+  goalAmount: string;
+  deadline: string;
   image: File | null;
 }
 
+// Map client category names to server category enum values
+const categoryMapping: Record<string, string> = {
+  'Technology': 'Tech',
+  'Art': 'Art',
+  'Design': 'Other',
+  'Film & Video': 'Film',
+  'Music': 'Music',
+  'Publishing': 'Publishing',
+  'Games': 'Games',
+  'Food': 'Food',
+  'Fashion': 'Other',
+  'Charity': 'Charity',
+  'Other': 'Other'
+};
+
 const CreateProjectPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { isSignedIn, isLoaded } = useClerkAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<ProjectFormData>({
     title: '',
+    shortDesc: '',
     description: '',
     category: '',
-    fundingGoal: '',
-    duration: '30',
+    goalAmount: '',
+    deadline: '',
     image: null,
   });
 
   // Redirect to login if not authenticated
-  React.useEffect(() => {
+  useEffect(() => {
     if (isLoaded && !isSignedIn) {
+      console.log('Not signed in, redirecting to login');
       navigate('/login', { state: { from: '/create-project' } });
+      return;
     }
     
-    // Check if user has creator role
-    if (user && !user.role.includes('Creator')) {
-      setError('You need a Creator account to create projects');
+    // Redirect to become-creator page if user doesn't have creator role
+    if (isLoaded && isSignedIn && user) {
+      console.log('User loaded, checking roles:', user.role);
+      if (!user.role.includes('Creator')) {
+        console.log('User is not a creator, redirecting to become-creator');
+        navigate('/become-creator', { state: { from: '/create-project' } });
+        return;
+      } else {
+        console.log('User is a creator, showing project form');
+      }
     }
+
+    // Set deadline to 30 days from now by default
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    setFormData(prev => ({
+      ...prev,
+      deadline: thirtyDaysFromNow.toISOString().split('T')[0]
+    }));
   }, [isSignedIn, isLoaded, navigate, user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -56,42 +89,59 @@ const CreateProjectPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
+    // Double-check if user has creator role
     if (!user || !user.role.includes('Creator')) {
-      setError('You need a Creator account to create projects');
+      navigate('/become-creator', { state: { from: '/create-project' } });
       return;
     }
     
     // Validate form
-    if (!formData.title || !formData.description || !formData.category || !formData.fundingGoal) {
+    if (!formData.title || !formData.shortDesc || !formData.description || !formData.category || !formData.goalAmount || !formData.deadline) {
       setError('Please fill in all required fields');
       return;
     }
     
     try {
+      console.log('Creating project with form data:', formData);
       setIsSubmitting(true);
       setError(null);
       
       // Create form data for file upload
       const projectFormData = new FormData();
       projectFormData.append('title', formData.title);
+      projectFormData.append('shortDesc', formData.shortDesc);
       projectFormData.append('description', formData.description);
-      projectFormData.append('category', formData.category);
-      projectFormData.append('fundingGoal', formData.fundingGoal);
-      projectFormData.append('duration', formData.duration);
+      
+      // Map client category to server category enum
+      const serverCategory = categoryMapping[formData.category] || 'Other';
+      projectFormData.append('category', serverCategory);
+      
+      projectFormData.append('goalAmount', formData.goalAmount);
+      projectFormData.append('deadline', new Date(formData.deadline).toISOString());
       
       if (formData.image) {
         projectFormData.append('image', formData.image);
       }
       
-      const response = await api.post('/projects', projectFormData, {
+      console.log('Sending request to create project...');
+      
+      // Make sure we're using the right API endpoint based on authentication method
+      const apiPath = token ? '/projects' : '/projects/clerk';
+      
+      const response = await api.post(apiPath, projectFormData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
+
+      console.log('Project created successfully:', response.data);
       
-      navigate(`/projects/${response.data._id}`);
+      navigate(`/projects/${response.data.project._id}`);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create project');
+      console.error('Error creating project:', err);
+      const errorMessage = err.response?.data?.message || 'Failed to create project';
+      console.error('Error details:', errorMessage);
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -107,11 +157,12 @@ const CreateProjectPage: React.FC = () => {
     'Games',
     'Food',
     'Fashion',
+    'Charity',
+    'Other'
   ];
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
+    <Layout>
       <main className="flex-grow">
         <div className="max-w-3xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
           <div className="mb-8">
@@ -151,8 +202,27 @@ const CreateProjectPage: React.FC = () => {
             </div>
 
             <div>
+              <label htmlFor="shortDesc" className="form-label">
+                Short Description <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="shortDesc"
+                name="shortDesc"
+                maxLength={200}
+                className="form-input"
+                value={formData.shortDesc}
+                onChange={handleChange}
+                required
+              />
+              <p className="mt-1 text-sm text-gray-500">
+                A brief summary of your project (max 200 characters)
+              </p>
+            </div>
+
+            <div>
               <label htmlFor="description" className="form-label">
-                Description <span className="text-red-500">*</span>
+                Full Description <span className="text-red-500">*</span>
               </label>
               <textarea
                 id="description"
@@ -190,38 +260,39 @@ const CreateProjectPage: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="fundingGoal" className="form-label">
+              <label htmlFor="goalAmount" className="form-label">
                 Funding Goal ($) <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
-                id="fundingGoal"
-                name="fundingGoal"
+                id="goalAmount"
+                name="goalAmount"
                 min="1"
                 step="1"
                 className="form-input"
-                value={formData.fundingGoal}
+                value={formData.goalAmount}
                 onChange={handleChange}
                 required
               />
             </div>
 
             <div>
-              <label htmlFor="duration" className="form-label">
-                Campaign Duration (days)
+              <label htmlFor="deadline" className="form-label">
+                Campaign End Date <span className="text-red-500">*</span>
               </label>
-              <select
-                id="duration"
-                name="duration"
+              <input
+                type="date"
+                id="deadline"
+                name="deadline"
                 className="form-input"
-                value={formData.duration}
+                value={formData.deadline}
                 onChange={handleChange}
-              >
-                <option value="15">15 days</option>
-                <option value="30">30 days</option>
-                <option value="45">45 days</option>
-                <option value="60">60 days</option>
-              </select>
+                min={new Date().toISOString().split('T')[0]}
+                required
+              />
+              <p className="mt-1 text-sm text-gray-500">
+                Your campaign will end at midnight on this date
+              </p>
             </div>
 
             <div>
@@ -253,8 +324,7 @@ const CreateProjectPage: React.FC = () => {
           </form>
         </div>
       </main>
-      <Footer />
-    </div>
+    </Layout>
   );
 };
 

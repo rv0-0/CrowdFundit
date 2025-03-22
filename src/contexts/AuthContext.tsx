@@ -15,6 +15,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
   error: string | null;
   updateUserRole: (role: UserRole) => Promise<void>;
@@ -23,6 +24,7 @@ interface AuthContextType {
 // Create context
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  token: null,
   isLoading: true,
   error: null,
   updateUserRole: async () => {},
@@ -34,6 +36,7 @@ export const useAuth = () => useContext(AuthContext);
 // Provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -46,13 +49,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updateToken = async () => {
       if (isSignedIn && clerk.session) {
         try {
-          const token = await clerk.session.getToken();
-          setAuthToken(token);
+          const sessionToken = await clerk.session.getToken();
+          setToken(sessionToken);
+          setAuthToken(sessionToken);
         } catch (err) {
           console.error('Failed to get session token:', err);
+          setToken(null);
           setAuthToken(null);
         }
       } else {
+        setToken(null);
         setAuthToken(null);
       }
     };
@@ -107,6 +113,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUserRole = async (role: UserRole) => {
     if (!user) throw new Error('User not authenticated');
     
+    console.log('Updating user role:', role);
+    console.log('Current user roles:', user.role);
+    
     try {
       // In a real app, this would call your backend API to update the user's role
       // For now, we'll just update the local state
@@ -117,11 +126,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Update local state
       setUser(prevUser => {
         if (!prevUser) return null;
+        
+        const newRoles = prevUser.role.includes(role) 
+          ? prevUser.role 
+          : [...prevUser.role, role];
+          
+        console.log('Updated user roles:', newRoles);
+        
         return {
           ...prevUser,
-          role: prevUser.role.includes(role) ? prevUser.role : [...prevUser.role, role]
+          role: newRoles
         };
       });
+      
+      console.log('Role update successful');
     } catch (err) {
       console.error('Error updating user role:', err);
       throw new Error('Failed to update user role');
@@ -131,6 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Context value
   const value = {
     user,
+    token,
     isLoading,
     error,
     updateUserRole,

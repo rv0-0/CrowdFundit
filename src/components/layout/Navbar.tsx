@@ -21,9 +21,7 @@ const Navbar: React.FC = () => {
     { name: 'How It Works', href: '/how-it-works', current: location.pathname === '/how-it-works' },
     { name: 'Blog', href: '/blog', current: location.pathname === '/blog' },
     { name: 'About', href: '/about', current: location.pathname === '/about' },
-    ...(isSignedIn && user?.role.includes('Creator')
-      ? [{ name: 'Create Project', href: '/create-project', current: location.pathname === '/create-project' }]
-      : []),
+    { name: 'Start a Project', href: '/create-project', current: location.pathname === '/create-project' || location.pathname === '/become-creator' },
   ];
 
   const userNavigation = [

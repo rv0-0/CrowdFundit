@@ -21,6 +21,8 @@ import TermsPage from './pages/TermsPage';
 import SupportPage from './pages/SupportPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import CreateBlogPostPage from './pages/CreateBlogPostPage';
+import BecomeCreatorPage from './pages/BecomeCreatorPage';
 
 // Components
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -58,12 +60,16 @@ const App: React.FC = () => {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/support" element={<SupportPage />} />
-            </Route>
-            
-            {/* Creator-only routes */}
-            <Route element={<ProtectedRoute requiredRole="Creator" />}>
               <Route path="/create-project" element={<CreateProjectPage />} />
             </Route>
+            
+            {/* Admin-only routes */}
+            <Route element={<ProtectedRoute requiredRole="Admin" />}>
+              <Route path="/blog/create" element={<CreateBlogPostPage />} />
+            </Route>
+            
+            {/* Become Creator routes */}
+            <Route path="/become-creator" element={<BecomeCreatorPage />} />
           </Routes>
         </Router>
       </AuthProvider>

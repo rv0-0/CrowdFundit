@@ -26,7 +26,9 @@ const BlogPostPage: React.FC = () => {
     const fetchBlogPost = async () => {
       try {
         setIsLoading(true);
+        console.log(`Fetching blog post with ID ${id}...`);
         const response = await api.get<BlogPost>(`/api/blog/${id}`);
+        console.log('Blog post fetched successfully:', response.data);
         setBlogPost(response.data);
         setError(null);
       } catch (err) {

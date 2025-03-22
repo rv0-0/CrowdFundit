@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import api from '../utils/api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface BlogPost {
   _id: string;
@@ -17,6 +18,7 @@ interface BlogPost {
 }
 
 const BlogPage: React.FC = () => {
+  const { user } = useAuth();
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,41 +26,46 @@ const BlogPage: React.FC = () => {
   useEffect(() => {
     const fetchBlogPosts = async () => {
       try {
+        console.log('Fetching blog posts from API...');
         setIsLoading(true);
         const response = await api.get<BlogPost[]>('/api/blog');
+        console.log('Blog posts fetched successfully:', response.data);
         setBlogPosts(response.data);
         setError(null);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching blog posts:', err);
         setError('Failed to load blog posts. Please try again later.');
-        // Use dummy data if API fails
-        setBlogPosts([
-          {
-            _id: '1',
-            title: 'Crowdfunding 101: How to Launch a Successful Campaign',
-            excerpt: 'Learn the essential steps to planning, creating, and promoting a successful crowdfunding campaign.',
-            content: '',
-            author: 'Sarah Johnson',
-            date: 'March 15, 2023',
-            category: 'Tips & Guides',
-            image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=2850&q=80',
-            readTime: 8,
-            featured: true
-          },
-          {
-            _id: '2',
-            title: 'The Psychology Behind Successful Crowdfunding Campaigns',
-            excerpt: 'Understanding what motivates backers and how to create an emotional connection with your audience.',
-            content: '',
-            author: 'Michael Chen',
-            date: 'February 27, 2023',
-            category: 'Research',
-            image: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f8e7c4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=2734&q=80',
-            readTime: 12,
-            featured: false
-          },
-          // Add more dummy posts as needed
-        ]);
+        // Create dummy data for development
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Using dummy data in development mode');
+          setBlogPosts([
+            {
+              _id: '1',
+              title: 'Crowdfunding 101: How to Launch a Successful Campaign',
+              excerpt: 'Learn the essential steps to planning, creating, and promoting a successful crowdfunding campaign.',
+              content: '',
+              author: 'Sarah Johnson',
+              date: '2023-03-15T00:00:00.000Z',
+              category: 'Tips & Guides',
+              image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=2850&q=80',
+              readTime: 8,
+              featured: true
+            },
+            {
+              _id: '2',
+              title: 'The Psychology Behind Successful Crowdfunding Campaigns',
+              excerpt: 'Understanding what motivates backers and how to create an emotional connection with your audience.',
+              content: '',
+              author: 'Michael Chen',
+              date: '2023-02-27T00:00:00.000Z',
+              category: 'Research',
+              image: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f8e7c4?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=2734&q=80',
+              readTime: 12,
+              featured: false
+            },
+            // Add more dummy posts as needed
+          ]);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -91,11 +98,24 @@ const BlogPage: React.FC = () => {
             {error && (
               <div className="mt-4 text-yellow-300 text-sm">{error}</div>
             )}
+            
+            {/* Add create post button for admin users */}
+            {user && user.role.includes('Admin') && (
+              <Link 
+                to="/blog/create" 
+                className="mt-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-primary-700 bg-white hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                Create New Post
+              </Link>
+            )}
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-          {blogPosts.length > 0 && (
+          {blogPosts.length > 0 ? (
             <>
               {/* Featured post */}
               <div className="mb-12">
@@ -185,6 +205,11 @@ const BlogPage: React.FC = () => {
                 ))}
               </div>
             </>
+          ) : (
+            <div className="text-center py-12">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">No blog posts found</h2>
+              <p className="text-lg text-gray-600 mb-8">Check back later for new content or try refreshing the page.</p>
+            </div>
           )}
 
           {/* Newsletter subscription */}
