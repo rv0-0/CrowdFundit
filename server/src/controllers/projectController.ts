@@ -5,6 +5,12 @@ import mongoose from 'mongoose';
 
 // Create a new project
 export const createProject = async (req: Request, res: Response): Promise<void> => {
+  console.log('[PROJECT_CREATE] Request received:', {
+    body: req.body,
+    files: req.file ? { filename: req.file.filename, path: req.file.path } : 'No file uploaded',
+    user: req.user ? { id: req.user._id, role: req.user.role } : 'No user data'
+  });
+  
   try {
     const {
       title,
@@ -16,20 +22,61 @@ export const createProject = async (req: Request, res: Response): Promise<void> 
       rewards
     } = req.body;
 
+    console.log('[PROJECT_CREATE] Extracted data:', { 
+      title, shortDesc, description, category, goalAmount, deadline 
+    });
+
+    // Check if user exists and has creator role
+    if (!req.user) {
+      console.log('[PROJECT_CREATE] Error: No user found in request');
+      res.status(401).json({ message: 'User authentication required' });
+      return;
+    }
+
+    if (!req.user.role.includes('Creator')) {
+      console.log('[PROJECT_CREATE] Error: User is not a creator', req.user.role);
+      res.status(403).json({ message: 'Creator role required to create projects' });
+      return;
+    }
+
     // Validate project category
     if (!Object.values(ProjectCategory).includes(category as ProjectCategory)) {
-      res.status(400).json({ message: 'Invalid category' });
+      console.log('[PROJECT_CREATE] Error: Invalid category', { 
+        providedCategory: category,
+        validCategories: Object.values(ProjectCategory)
+      });
+      res.status(400).json({ 
+        message: 'Invalid category', 
+        providedCategory: category,
+        validCategories: Object.values(ProjectCategory)
+      });
       return;
     }
 
     // Validate deadline (must be in the future)
     const deadlineDate = new Date(deadline);
     if (deadlineDate <= new Date()) {
+      console.log('[PROJECT_CREATE] Error: Deadline must be in the future', {
+        providedDeadline: deadline,
+        deadlineDate: deadlineDate,
+        currentDate: new Date()
+      });
       res.status(400).json({ message: 'Deadline must be in the future' });
       return;
     }
 
     // Create project
+    console.log('[PROJECT_CREATE] Creating project with data', {
+      title,
+      shortDesc,
+      description,
+      category,
+      goalAmount: parseFloat(goalAmount),
+      deadline: deadlineDate,
+      creatorId: req.user._id,
+      image: req.file ? req.file.path : 'default-project.jpg'
+    });
+
     const project = await Project.create({
       title,
       shortDesc,
@@ -42,8 +89,11 @@ export const createProject = async (req: Request, res: Response): Promise<void> 
       status: ProjectStatus.ACTIVE
     });
 
+    console.log('[PROJECT_CREATE] Project created successfully', { projectId: project._id });
+
     // Create rewards if provided
     if (rewards && Array.isArray(rewards)) {
+      console.log('[PROJECT_CREATE] Processing rewards', { rewardsCount: rewards.length });
       const rewardObjects = rewards.map((reward: any) => ({
         projectId: project._id,
         amount: parseFloat(reward.amount),
@@ -54,10 +104,15 @@ export const createProject = async (req: Request, res: Response): Promise<void> 
       }));
 
       await Reward.insertMany(rewardObjects);
+      console.log('[PROJECT_CREATE] Rewards created successfully');
+    } else {
+      console.log('[PROJECT_CREATE] No rewards to process');
     }
 
     res.status(201).json({ message: 'Project created successfully', project });
   } catch (error: any) {
+    console.error('[PROJECT_CREATE] Error creating project:', error);
+    console.error('[PROJECT_CREATE] Error stack:', error.stack);
     res.status(500).json({ message: error.message });
   }
 };
