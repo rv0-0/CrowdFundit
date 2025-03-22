@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { UserRole, IUser } from '../models/User';
+import mongoose from 'mongoose';
 
 // Generate JWT Token
 const generateToken = (id: string): string => {
@@ -49,7 +50,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       email: user.email,
       role: user.role,
       profilePic: user.profilePic,
-      token: generateToken(user._id.toString())
+      token: generateToken(user._id instanceof mongoose.Types.ObjectId 
+        ? user._id.toString() 
+        : user._id as string)
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -82,7 +85,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       email: user.email,
       role: user.role,
       profilePic: user.profilePic,
-      token: generateToken(user._id.toString())
+      token: generateToken(user._id instanceof mongoose.Types.ObjectId 
+        ? user._id.toString() 
+        : user._id as string)
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });

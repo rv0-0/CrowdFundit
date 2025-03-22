@@ -9,6 +9,7 @@ import connectDB from './config/database';
 import authRoutes from './routes/authRoutes';
 import projectRoutes from './routes/projectRoutes';
 import donationRoutes from './routes/donationRoutes';
+import blogRoutes from './routes/blogRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -32,6 +33,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/donations', donationRoutes);
+app.use('/api/blog', blogRoutes);
 
 // Root route
 app.get('/', (req: Request, res: Response) => {
